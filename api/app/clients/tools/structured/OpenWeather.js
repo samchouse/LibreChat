@@ -83,6 +83,7 @@ class OpenWeather extends Tool {
     this.envVar = 'OPENWEATHER_API_KEY';
     this.override = fields.override ?? false;
     this.apiKey = fields[this.envVar] ?? this.getApiKey();
+    this.userId = fields.userId;
   }
 
   getApiKey() {
@@ -297,8 +298,11 @@ class OpenWeather extends Tool {
           return `Error: Unknown action: ${action}`;
       }
 
-      const url = `${baseUrl}${endpoint}?${params.toString()}`;
-      const response = await fetch(url);
+      const customBase = process.env.OPENWEATHER_API_BASE;
+      const url = `${customBase ?? baseUrl}${endpoint}?${params.toString()}`;
+      const response = await fetch(url, {
+        ...(customBase && { headers: { Authorization: `Bearer ${this.apiKey}`, 'X-Tracker-User': `librechat/${this.userId}` } })
+      });
       const json = await response.json();
       if (!response.ok) {
         return `Error: OpenWeather API request failed with status ${response.status}: ${

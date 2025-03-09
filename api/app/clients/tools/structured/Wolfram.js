@@ -12,6 +12,7 @@ class WolframAlphaAPI extends Tool {
 
     this.name = 'wolfram';
     this.apiKey = fields.WOLFRAM_APP_ID || this.getAppId();
+    this.userId = fields.userId;
     this.description_for_model = `// Access dynamic computation and curated data from WolframAlpha and Wolfram Cloud.
     // General guidelines:
     // - Use only getWolframAlphaResults or getWolframCloudResults endpoints.
@@ -44,11 +45,12 @@ class WolframAlphaAPI extends Tool {
     this.schema = z.object({
       input: z.string().describe('Natural language query to WolframAlpha following the guidelines'),
     });
+    this.customBase = process.env.WOLFRAM_API_BASE;
   }
 
   async fetchRawText(url) {
     try {
-      const response = await axios.get(url, { responseType: 'text' });
+      const response = await axios.get(url, { responseType: 'text', ...(this.customBase && { headers: { Authorization: `Bearer ${this.apiKey}`, 'X-Tracker-User': `librechat/${this.userId}` } }) });
       return response.data;
     } catch (error) {
       logger.error('[WolframAlphaAPI] Error fetching raw text:', error);
@@ -67,10 +69,10 @@ class WolframAlphaAPI extends Tool {
   createWolframAlphaURL(query) {
     // Clean up query
     const formattedQuery = query.replaceAll(/`/g, '').replaceAll(/\n/g, ' ');
-    const baseURL = 'https://www.wolframalpha.com/api/v1/llm-api';
+    const baseURL = 'https://www.wolframalpha.com/api/v1';
     const encodedQuery = encodeURIComponent(formattedQuery);
     const appId = this.apiKey || this.getAppId();
-    const url = `${baseURL}?input=${encodedQuery}&appid=${appId}`;
+    const url = `${this.customBase ?? baseURL}/llm-api?input=${encodedQuery}&appid=${appId}`;
     return url;
   }
 

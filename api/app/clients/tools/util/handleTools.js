@@ -211,7 +211,7 @@ const loadTools = async ({
     youtube: async () => {
       const authFields = getAuthFields('youtube');
       const authValues = await loadAuthValues({ userId: user, authFields });
-      return createYouTubeTools(authValues);
+      return createYouTubeTools({ ...authValues, userId: user });
     },
   };
 

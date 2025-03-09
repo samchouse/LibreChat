@@ -13,6 +13,7 @@ class TavilySearchResults extends Tool {
     /* Used to initialize the Tool without necessary variables. */
     this.override = fields.override ?? false;
     this.apiKey = fields[this.envVar] ?? this.getApiKey();
+    this.userId = fields.userId;
 
     this.kwargs = fields?.kwargs ?? {};
     this.name = 'tavily_search_results_json';
@@ -66,16 +67,18 @@ class TavilySearchResults extends Tool {
     const { query, ...rest } = validationResult.data;
 
     const requestBody = {
-      api_key: this.apiKey,
       query,
       ...rest,
       ...this.kwargs,
     };
 
-    const response = await fetch('https://api.tavily.com/search', {
+    const customBase = process.env.TAVILY_API_BASE;
+    const response = await fetch(`${customBase ?? 'https://api.tavily.com'}/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+        ...(customBase && { 'X-Tracker-User': `librechat/${this.userId}` }),
       },
       body: JSON.stringify(requestBody),
     });

@@ -36,11 +36,16 @@ function createYouTubeTools(fields = {}) {
   const envVar = 'YOUTUBE_API_KEY';
   const override = fields.override ?? false;
   const apiKey = fields.apiKey ?? fields[envVar] ?? getApiKey(envVar, override);
+  const customBase = process.env.YOUTUBE_API_BASE;
 
   const youtubeClient = youtube({
     version: 'v3',
     auth: apiKey,
   });
+  const ytOptions = {
+    rootUrl: customBase,
+    ...(customBase && { headers: { Authorization: `Bearer ${apiKey}`, 'X-Tracker-User': `librechat/${fields.userId}` } })
+  };
 
   const searchTool = tool(
     async ({ query, maxResults = 5 }) => {
@@ -49,7 +54,7 @@ function createYouTubeTools(fields = {}) {
         q: query,
         type: 'video',
         maxResults: maxResults || 5,
-      });
+      }, ytOptions);
       const result = response.data.items.map((item) => ({
         title: item.snippet.title,
         description: item.snippet.description,
@@ -82,7 +87,7 @@ Example: query="cooking pasta tutorials" maxResults=3`,
       const response = await youtubeClient.videos.list({
         part: 'snippet,statistics',
         id: videoId,
-      });
+      }, ytOptions);
 
       if (!response.data.items?.length) {
         throw new Error('Video not found');
@@ -124,7 +129,7 @@ Example: url="https://youtube.com/watch?v=abc123" or url="abc123"`,
         part: 'snippet',
         videoId,
         maxResults: maxResults || 10,
-      });
+      }, ytOptions);
 
       const result = response.data.items.map((item) => ({
         author: item.snippet.topLevelComment.snippet.authorDisplayName,
