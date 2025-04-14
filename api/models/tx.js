@@ -107,8 +107,9 @@ const tokenValues = Object.assign(
   so this was from https://artificialanalysis.ai/models/command-light/providers */
     command: { prompt: 0.38, completion: 0.38 },
     'gemini-2.0-flash-lite': { prompt: 0.075, completion: 0.3 },
-    'gemini-2.0-flash': { prompt: 0.1, completion: 0.7 },
+    'gemini-2.0-flash': { prompt: 0.1, completion: 0.4 },
     'gemini-2.0': { prompt: 0, completion: 0 }, // https://ai.google.dev/pricing
+    'gemini-2.5-pro-preview-03-25': { prompt: 1.25, completion: 10 },
     'gemini-2.5': { prompt: 0, completion: 0 }, // Free for a period of time
     'gemini-1.5-flash-8b': { prompt: 0.075, completion: 0.3 },
     'gemini-1.5-flash': { prompt: 0.15, completion: 0.6 },
@@ -122,6 +123,10 @@ const tokenValues = Object.assign(
     'grok-2-1212': { prompt: 2.0, completion: 10.0 },
     'grok-2-latest': { prompt: 2.0, completion: 10.0 },
     'grok-2': { prompt: 2.0, completion: 10.0 },
+    'grok-3-mini-fast': { prompt: 0.4, completion: 4 },
+    'grok-3-mini': { prompt: 0.3, completion: 0.5 },
+    'grok-3-fast': { prompt: 5.0, completion: 25.0 },
+    'grok-3': { prompt: 3.0, completion: 15.0 },
     'grok-beta': { prompt: 5.0, completion: 15.0 },
     'mistral-large': { prompt: 2.0, completion: 6.0 },
     'pixtral-large': { prompt: 2.0, completion: 6.0 },

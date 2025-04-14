@@ -11,6 +11,7 @@ import {
   tMessageSchema,
   tConvoUpdateSchema,
   ContentTypes,
+  isAssistantsEndpoint,
 } from 'librechat-data-provider';
 import type {
   TMessage,
@@ -31,11 +32,11 @@ import {
 } from '~/utils';
 import useAttachmentHandler from '~/hooks/SSE/useAttachmentHandler';
 import useContentHandler from '~/hooks/SSE/useContentHandler';
+import store, { useApplyNewAgentTemplate } from '~/store';
 import useStepHandler from '~/hooks/SSE/useStepHandler';
 import { useAuthContext } from '~/hooks/AuthContext';
 import { MESSAGE_UPDATE_INTERVAL } from '~/common';
 import { useLiveAnnouncer } from '~/Providers';
-import store from '~/store';
 
 type TSyncData = {
   sync: boolean;
@@ -140,8 +141,9 @@ export default function useEventHandlers({
   resetLatestMessage,
 }: EventHandlerParams) {
   const queryClient = useQueryClient();
-  const setAbortScroll = useSetRecoilState(store.abortScroll);
   const { announcePolite } = useLiveAnnouncer();
+  const applyAgentTemplate = useApplyNewAgentTemplate();
+  const setAbortScroll = useSetRecoilState(store.abortScroll);
 
   const lastAnnouncementTimeRef = useRef(Date.now());
   const { conversationId: paramId } = useParams();
@@ -364,6 +366,9 @@ export default function useEventHandlers({
       });
 
       let update = {} as TConversation;
+      if (conversationId) {
+        applyAgentTemplate(conversationId, submission.conversation.conversationId);
+      }
       if (setConversation && !isAddedRequest) {
         setConversation((prevState) => {
           let title = prevState?.title;
@@ -528,7 +533,8 @@ export default function useEventHandlers({
 
       setCompleted((prev) => new Set(prev.add(initialResponse.messageId)));
 
-      const conversationId = userMessage.conversationId ?? submission.conversationId ?? '';
+      const conversationId =
+        userMessage.conversationId ?? submission.conversation?.conversationId ?? '';
 
       const parseErrorResponse = (data: TResData | Partial<TMessage>) => {
         const metadata = data['responseMessage'] ?? data;
@@ -597,7 +603,7 @@ export default function useEventHandlers({
       });
 
       setMessages([...messages, userMessage, errorResponse]);
-      if (receivedConvoId && paramId === 'new' && newConversation) {
+      if (receivedConvoId && paramId === Constants.NEW_CONVO && newConversation) {
         newConversation({
           template: { conversationId: receivedConvoId },
           preset: tPresetSchema.parse(submission.conversation),
@@ -617,6 +623,17 @@ export default function useEventHandlers({
       const { endpoint: _endpoint, endpointType } =
         (submission.conversation as TConversation | null) ?? {};
       const endpoint = endpointType ?? _endpoint;
+      if (!isAssistantsEndpoint(endpoint)) {
+        if (newConversation) {
+          newConversation({
+            template: { conversationId: conversationId || v4() },
+            preset: tPresetSchema.parse(submission.conversation),
+          });
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
       try {
         const response = await fetch(`${EndpointURLs[endpoint ?? '']}/abort`, {
           method: 'POST',
@@ -644,7 +661,7 @@ export default function useEventHandlers({
           } else {
             cancelHandler(data, submission);
           }
-        } else if (response.status === 204) {
+        } else if (response.status === 204 || response.status === 200) {
           const responseMessage = {
             ...submission.initialResponse,
           };
